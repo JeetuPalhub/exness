@@ -11,27 +11,21 @@ export interface CustomRequest extends Request {
 export const userMiddleware = (
   req: CustomRequest,
   res: Response,
-  next: NextFunction
+  next:any
 ) => {
   const token = req.headers.authorization;
-
+  console.log("token", token)
+  console.log(token)
   if (!token) {
-    return res.status(401).json({
-      message: "Unauthorized",
-    });
-  }
-
-  try {
-    // Verify Token
     const payload = jwt.verify(token, JWTPASSWORD) as { userId: UUID };
 
     // Attach userId to request
     req.id = payload.userId;
 
     next(); // token valid → allow route
-  } catch (err) {
-    return res.status(401).json({
-      message: "Invalid token",
+   } else {
+     res.status(401).json({
+      message: "Unauthorized",
     });
   }
 };
