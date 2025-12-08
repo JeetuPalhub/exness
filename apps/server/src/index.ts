@@ -20,7 +20,7 @@ app.use("/api/v1/candles", getCandlesData);
 app.use("/api/v1/user", userRouter);
 
 // Order routes (protected)
-app.use("api/v1/order", userMiddleware, orderRouter);
+app.use("/api/v1/order", userMiddleware, orderRouter);
 
 (async () => {
     await initializeDatabase();
