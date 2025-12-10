@@ -25,7 +25,12 @@ export class WSManager{
             this.onChannelSelected?.(symbol);
         }
 
-        ws.send("You are connected to socket server");
+        ws.send(
+            JSON.stringify({
+                type: "info",
+                message: "You are connected to socket server",
+            })
+        );
     });
  
     }

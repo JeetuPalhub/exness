@@ -1,16 +1,51 @@
-import WebSocket from "ws";
-import { Data } from "./type";
-import {scalewebsocket} from "./router/router";
-import { connectRedis } from "./connectionredis/connectredis";
-const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade/btcusdt@trade/ethusdt@trade/bnbusdt@trade");
-const SPREAD_CONSTANT = 0.005;
+import dotenv from "dotenv";
+dotenv.config();
 
-ws.on("open", () => {
-  console.log("Connected to Binance");
+import WebSocket from "ws"; // binance se live data lena ke liye 
+import {TradeData, KlineData } from "./type"; // typescript types
+import { connectRedis } from "./connectionredis/connectredis"; //redis se connection   
+import { handleTrade, handleKline } from "./router/router"; // data ko process krne vale functions
+
+const symbol = "btcusdt"; // Binance se BTC/USDT ka data lana hai .
+
+// Trade Stream (live ticks) 
+const tradeWS = new WebSocket(
+   `wss://stream.binance.com:9443/ws/${symbol}@trade` //Yeh har trade ka data deta hai.Real-time me price move hota hai na?Wo data yahan aayega
+
+);
+
+// ---- KLINE STREAM (1m candles) ----//Yeh 1-minute candle ka data deta hai:open,high,low,close,volume//Candle chart banane ke liye perfect.
+const klineWS = new WebSocket(
+  `wss://stream.binance.com:9443/ws/${symbol}@kline_1m`
+);
+
+// Redis connection 
+connectRedis(); // Redis ek fast storage hai . Is line se Redis se connection ban jata hai.
+
+// Trade handler
+tradeWS.on("open", () => {
+  console.log("Connected to Binance TRADE stream"); // Binance se connection ho gaya 
 });
 
-connectRedis()
-ws.on("message", (msg) => {
-  const data:Data = JSON.parse(msg.toString());
-  scalewebsocket(data)
+tradeWS.on("message", async (msg) => {
+  try {
+    const data: TradeData = JSON.parse(msg.toString());
+    await handleTrade(data);
+  } catch (err) {
+    console.error("Error in tradeWs message handler:", err);
+  }
+});
+
+// kline handler
+klineWS.on("open", () => {
+  console.log("Connected to Binance KLINE stream");
+});
+
+klineWS.on("message", async(msg) => {
+  try {
+    const data: KlineData = JSON.parse(msg.toString());
+    await handleKline(data);
+  } catch (err) {
+    console.error("Error in KlineWS message handler:", err);
+  }
 });
